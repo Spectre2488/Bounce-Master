@@ -1,0 +1,137 @@
+import pygame
+import sys
+
+# Initialize Pygame
+pygame.init()
+
+# Set up the display
+WIDTH, HEIGHT = 800, 600
+win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Simple Ball Game")
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (30, 30, 30)  # Dark gray background color
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)  # Blue ball color
+
+# Player settings
+player_width, player_height = 100, 20  # Rectangular player size
+player_pos = [(WIDTH - player_width) // 2, HEIGHT - 2 * player_height]  # Initial position
+player_speed = 5
+
+# Ball settings
+ball_radius = 10
+ball_pos = [WIDTH // 2, HEIGHT // 2]
+ball_speed_easy = [2, 3]
+ball_speed_medium = [4, 5]
+ball_speed_hard = [5, 6] 
+
+# Highscore
+high_score = 0
+
+# Text settings
+font = pygame.font.SysFont(None, 36)
+
+# Functions
+def draw_objects():
+    win.fill(BLACK)  # Fill the window with dark gray color
+    pygame.draw.circle(win, BLUE, ball_pos, ball_radius)  # Change ball color to blue
+    pygame.draw.rect(win, WHITE, (player_pos[0], player_pos[1], player_width, player_height))
+
+def update_objects():
+    global high_score
+    ball_pos[0] += ball_speed[0]
+    ball_pos[1] += ball_speed[1]
+
+    # Check collision with walls
+    if ball_pos[0] <= ball_radius or ball_pos[0] >= WIDTH - ball_radius:
+        ball_speed[0] = -ball_speed[0]
+    if ball_pos[1] <= ball_radius:
+        ball_speed[1] = -ball_speed[1]
+
+    # Check collision with the player
+    if ball_pos[1] >= player_pos[1] - ball_radius and player_pos[0] <= ball_pos[0] <= player_pos[0] + player_width:
+        ball_speed[1] = -ball_speed[1]
+        high_score += 1
+
+    # Check if ball missed the player
+    if ball_pos[1] >= HEIGHT:
+        return True  # Missed the ball
+    return False
+
+def show_message(message):
+    text = font.render(message, True, RED)
+    text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    win.blit(text, text_rect)
+
+def show_high_score():
+    score_text = font.render("Score: " + str(high_score), True, WHITE)
+    win.blit(score_text, (10, 10))
+
+def select_difficulty():
+    while True:
+        draw_objects()
+        show_high_score()
+        difficulty_text = font.render("Select difficulty: E - Easy, M - Medium, H - Hard", True, WHITE)
+        win.blit(difficulty_text, (WIDTH // 2 - 220, HEIGHT // 2))
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_e:
+                    return "easy"
+                elif event.key == pygame.K_m:
+                    return "medium"
+                elif event.key == pygame.K_h:
+                    return "hard"
+
+# Main game loop
+while True:
+    high_score = 0
+    difficulty = select_difficulty()
+    if difficulty == "easy":
+        ball_speed = ball_speed_easy
+    elif difficulty == "medium":
+        ball_speed = ball_speed_medium
+    elif difficulty == "hard":
+        ball_speed = ball_speed_hard
+
+    running = True
+    failed = False
+
+    # Reset player and ball positions
+    player_pos = [(WIDTH - player_width) // 2, HEIGHT - 2 * player_height]
+    ball_pos = [WIDTH // 2, HEIGHT // 2]
+
+    while running:
+        draw_objects()
+        show_high_score()
+
+        # Event handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        if failed:
+            show_message("Failed! Press 'R' to restart")
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_r]:
+                break  # Break out of the inner loop to restart the game
+
+        else:
+            failed = update_objects()
+
+        # Player movement
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and player_pos[0] > 0:
+            player_pos[0] -= player_speed
+        if keys[pygame.K_RIGHT] and player_pos[0] < WIDTH - player_width:
+            player_pos[0] += player_speed
+
+        # Draw objects
+        pygame.display.update()
+
+        # Control the game's frame rate
+        pygame.time.Clock().tick(60)
